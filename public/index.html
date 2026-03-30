@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Roteiros de Viagem</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <span class="logo-icon">✈️</span>
+        <div>
+          <h1>RoteiroPro</h1>
+          <p>Seu roteiro de viagem personalizado com IA</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h2>Crie seu roteiro perfeito em minutos</h2>
+      <p>Preencha os dados abaixo e nossa IA vai montar um roteiro completo com restaurantes, hoteis, atividades e muito mais.</p>
+    </div>
+  </section>
+
+  <!-- Form Section -->
+  <main class="form-section">
+    <div class="card">
+      <form id="roteiro-form">
+
+        <!-- Destinos -->
+        <div class="form-group">
+          <label>📍 Para onde voce quer ir?</label>
+          <div class="checkbox-grid cols-2 destinos-grid">
+            <label class="check-card"><input type="checkbox" name="destinos" value="Paris"><span class="check-label">🇫🇷 Paris</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Londres"><span class="check-label">🇬🇧 Londres</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Roma"><span class="check-label">🇮🇹 Roma</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Nova York"><span class="check-label">🇺🇸 Nova York</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Barcelona"><span class="check-label">🇪🇸 Barcelona</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Toquio"><span class="check-label">🇯🇵 Toquio</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Dubai"><span class="check-label">🇦🇪 Dubai</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Istanbul"><span class="check-label">🇹🇷 Istanbul</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Bangkok"><span class="check-label">🇹🇭 Bangkok</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Lisboa"><span class="check-label">🇵🇹 Lisboa</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Buenos Aires"><span class="check-label">🇦🇷 Buenos Aires</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Cancun"><span class="check-label">🇲🇽 Cancun</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Rio de Janeiro"><span class="check-label">🇧🇷 Rio de Janeiro</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Santiago"><span class="check-label">🇨🇱 Santiago</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Orlando"><span class="check-label">🇺🇸 Orlando</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Miami"><span class="check-label">🇺🇸 Miami</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Sao Francisco"><span class="check-label">🇺🇸 Sao Francisco</span></label>
+            <label class="check-card"><input type="checkbox" name="destinos" value="Las Vegas"><span class="check-label">🇺🇸 Las Vegas</span></label>
+          </div>
+          <div class="outro-destino">
+            <label class="check-card full"><input type="checkbox" id="destino-outro-check" value="Outro"><span class="check-label">✏️ Outro destino</span></label>
+            <input type="text" id="destino-outro-text" class="outro-input" placeholder="Digite o destino especifico (ex: Roma, Toquio, Cancun...)" disabled>
+          </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="form-group">
+          <label>📅 Quando voce vai viajar?</label>
+          <div class="date-mode-toggle">
+            <button type="button" class="mode-btn active" id="modeExatas" onclick="setDateMode('exatas')">Datas exatas</button>
+            <button type="button" class="mode-btn" id="modeFlexivel" onclick="setDateMode('flexivel')">Ainda nao sei as datas</button>
+          </div>
+          <!-- Modo flexivel -->
+          <div class="flex-date-row" id="flexDateRow" style="display:none">
+            <div class="flex-field">
+              <span class="flex-label">Quantos dias?</span>
+              <select id="flexDias">
+                <option value="3">3 dias</option>
+                <option value="5">5 dias</option>
+                <option value="7" selected>7 dias</option>
+                <option value="10">10 dias</option>
+                <option value="14">14 dias</option>
+                <option value="21">21 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+            <div class="flex-field">
+              <span class="flex-label">Em qual estacao?</span>
+              <select id="flexEstacao">
+                <option value="Verao">☀️ Verao</option>
+                <option value="Outono">🍂 Outono</option>
+                <option value="Inverno">❄️ Inverno</option>
+                <option value="Primavera">🌸 Primavera</option>
+                <option value="Qualquer epoca">🌍 Qualquer epoca</option>
+              </select>
+            </div>
+          </div>
+          <!-- Modo datas exatas -->
+          <div class="date-range-picker" id="dateRangePicker">
+            <div class="date-range-display" id="dateDisplay">
+              <div class="date-range-slot" id="slotIda">
+                <span class="slot-label">Ida</span>
+                <span class="slot-value" id="idaValue">Selecione</span>
+              </div>
+              <div class="date-range-arrow">→</div>
+              <div class="date-range-slot" id="slotVolta">
+                <span class="slot-label">Volta</span>
+                <span class="slot-value" id="voltaValue">Selecione</span>
+              </div>
+              <div class="date-days-count" id="daysCount"></div>
+            </div>
+            <div class="calendar-dropdown" id="calendarDropdown">
+              <div class="calendar-header">
+                <button type="button" class="cal-nav" id="calPrev">‹</button>
+                <span class="cal-month-year" id="calMonthYear"></span>
+                <button type="button" class="cal-nav" id="calNext">›</button>
+              </div>
+              <div class="calendar-weekdays">
+                <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span>
+              </div>
+              <div class="calendar-days" id="calendarDays"></div>
+              <div class="calendar-footer">
+                <button type="button" class="cal-clear" id="calClear">Limpar datas</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viajantes -->
+        <div class="form-group">
+          <label for="viajantes">👥 Quem vai viajar?</label>
+          <input type="text" id="viajantes" placeholder="Ex: Casal, 2 adultos e 1 crianca de 5 anos" required>
+        </div>
+
+        <!-- Objetivo -->
+        <div class="form-group">
+          <label for="objetivo">🎯 Qual o objetivo da viagem?</label>
+          <input type="text" id="objetivo" placeholder="Ex: Lua de mel, ferias em familia, turismo cultural">
+        </div>
+
+        <!-- Atividades -->
+        <div class="form-group">
+          <label>🏛️ Que tipo de atividades voce curte?</label>
+          <div class="checkbox-grid cols-2 atividades-grid">
+            <label class="check-card"><input type="checkbox" name="atividades" value="Museus"><span class="check-label">🏛️ Museus</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Praias"><span class="check-label">🏖️ Praias</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Gastronomia"><span class="check-label">🍽️ Gastronomia</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Compras"><span class="check-label">🛍️ Compras</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Descanso"><span class="check-label">🧘 Descanso</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Aventura e Esportes"><span class="check-label">🧗 Aventura</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Historia"><span class="check-label">📜 Historia</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Fotografia"><span class="check-label">📸 Fotografia</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Atividades ao ar livre"><span class="check-label">🌿 Ar livre</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Arte e Cultura"><span class="check-label">🎭 Arte e Cultura</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Vida noturna"><span class="check-label">🌙 Vida noturna</span></label>
+            <label class="check-card"><input type="checkbox" name="atividades" value="Natureza e Ecoturismo"><span class="check-label">🌳 Ecoturismo</span></label>
+          </div>
+        </div>
+
+        <!-- Estilo + Transporte -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="estilo">💎 Estilo da viagem</label>
+            <select id="estilo">
+              <option value="Economico">Economico</option>
+              <option value="Moderado" selected>Moderado</option>
+              <option value="Confortavel">Confortavel</option>
+              <option value="Luxo">Luxo</option>
+              <option value="Aventura">Aventura</option>
+              <option value="Mochilao">Mochilao</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Transporte -->
+        <div class="form-group">
+          <label>🚌 Como pretende se locomover?</label>
+          <div class="checkbox-grid cols-3">
+            <label class="check-card"><input type="checkbox" name="transporte" value="Aviao"><span class="check-label">✈️ Aviao</span></label>
+            <label class="check-card"><input type="checkbox" name="transporte" value="Trem"><span class="check-label">🚄 Trem</span></label>
+            <label class="check-card"><input type="checkbox" name="transporte" value="Onibus"><span class="check-label">🚌 Onibus</span></label>
+            <label class="check-card"><input type="checkbox" name="transporte" value="Carro alugado"><span class="check-label">🚗 Carro alugado</span></label>
+            <label class="check-card"><input type="checkbox" name="transporte" value="Navio/Cruzeiro"><span class="check-label">🚢 Navio</span></label>
+            <label class="check-card"><input type="checkbox" name="transporte" value="A pe/Bicicleta"><span class="check-label">🚲 A pe/Bike</span></label>
+          </div>
+        </div>
+
+        <!-- Orcamento -->
+        <div class="form-group">
+          <label for="orcamento">💰 Orcamento total</label>
+          <div class="budget-slider-row">
+            <input type="range" id="budgetSlider" min="1000" max="100000" step="500" value="15000" class="budget-slider">
+            <div class="budget-slider-labels">
+              <span>R$ 1.000</span>
+              <span>R$ 100.000</span>
+            </div>
+          </div>
+          <div class="input-money">
+            <span class="money-prefix">R$</span>
+            <input type="text" id="orcamento" placeholder="15.000,00" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <span class="btn-text">Gerar Meu Roteiro</span>
+          <span class="btn-icon">→</span>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand">✈️ RoteiroPro</p>
+      <p class="footer-tagline">Roteiros inteligentes feitos com IA para tornar sua viagem inesquecivel.</p>
+      <p class="footer-copy">Feito com 🧡 — 2026</p>
+    </div>
+  </footer>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading">
+    <div class="loading-content">
+      <!-- Fase de progresso -->
+      <div class="progress-phase" id="progressPhase">
+        <div class="step-icon-wrapper">
+          <span class="step-icon" id="stepIcon">✈️</span>
+        </div>
+        <h2>Gerando seu roteiro...</h2>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-percent" id="progressPercent">0%</div>
+        <div class="progress-step" id="progressStep">Iniciando...</div>
+      </div>
+      <!-- Fase de conclusao -->
+      <div class="progress-done" id="progressDone">
+        <div class="checkmark-circle">
+          <svg viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="25" fill="none" stroke="#4CAF50" stroke-width="2"/>
+            <path class="checkmark-path" fill="none" stroke="#4CAF50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+          </svg>
+        </div>
+        <h2>Roteiro pronto!</h2>
+        <p>Abrindo seu roteiro personalizado...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+  <script src="script.js"></script>
+  <script src="http://localhost:35729/livereload.js?snipver=1"></script>
+</body>
+</html>
