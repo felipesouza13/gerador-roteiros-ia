@@ -344,42 +344,38 @@ function getCheckedValues(name) {
 // PROGRESS STEPS
 // ============================================
 
-// Etapas principais (mostradas em ordem enquanto barra sobe ate ~88%)
-const MAIN_STEPS = [
+// Etapas intercaladas: seria, engraçada, seria, engraçada... cicla infinitamente
+const ALL_STEPS = [
   { icon: "✈️", anim: "fly",    text: "Buscando os melhores voos..." },
-  { icon: "🏨", anim: "bounce", text: "Verificando hoteis e hospedagens..." },
-  { icon: "🍽️", anim: "swing",  text: "Selecionando restaurantes incriveis..." },
-  { icon: "🌤️", anim: "float",  text: "Checando clima e melhor epoca..." },
-  { icon: "📞", anim: "shake",  text: "Pesquisando telefones importantes..." },
-  { icon: "💰", anim: "bounce", text: "Calculando orcamento detalhado..." },
-  { icon: "🗺️", anim: "pulse",  text: "Montando roteiro dia a dia..." },
-  { icon: "📌", anim: "bounce", text: "Verificando reservas necessarias..." },
-  { icon: "📸", anim: "pulse",  text: "Selecionando dicas de fotografia..." },
-  { icon: "✨", anim: "spin",   text: "Dando os toques finais..." },
-];
-
-// Etapas extras — ciclam infinitamente apos as principais (pra nunca parecer travado)
-const EXTRA_STEPS = [
   { icon: "🧳", anim: "shake",  text: "Arrumando as malas mentalmente..." },
+  { icon: "🏨", anim: "bounce", text: "Verificando hoteis e hospedagens..." },
   { icon: "🐢", anim: "float",  text: "A IA ta pensando... ela e perfeccionista..." },
+  { icon: "🍽️", anim: "swing",  text: "Selecionando restaurantes incriveis..." },
   { icon: "🍕", anim: "swing",  text: "Fazendo uma pausa pra pizza..." },
+  { icon: "🌤️", anim: "float",  text: "Checando clima e melhor epoca..." },
   { icon: "🤖", anim: "pulse",  text: "A IA ta caprichando no seu roteiro..." },
+  { icon: "📞", anim: "shake",  text: "Pesquisando telefones importantes..." },
   { icon: "🎒", anim: "bounce", text: "Verificando se cabe tudo na mochila..." },
+  { icon: "💰", anim: "bounce", text: "Calculando orcamento detalhado..." },
   { icon: "☕", anim: "float",  text: "Tomando um cafezinho enquanto finaliza..." },
-  { icon: "🗼", anim: "pulse",  text: "Conferindo os melhores pontos turisticos..." },
-  { icon: "🧭", anim: "spin",   text: "Recalculando a rota mais bonita..." },
-  { icon: "🎵", anim: "swing",  text: "Criando a playlist da viagem... brincadeira..." },
-  { icon: "🌍", anim: "spin",   text: "Dando a volta ao mundo pra encontrar o melhor..." },
+  { icon: "🗺️", anim: "pulse",  text: "Montando roteiro dia a dia..." },
   { icon: "🦜", anim: "bounce", text: "Consultando um papagaio local..." },
+  { icon: "📌", anim: "bounce", text: "Verificando reservas necessarias..." },
   { icon: "🍷", anim: "swing",  text: "Degustando vinhos virtualmente..." },
+  { icon: "📸", anim: "pulse",  text: "Selecionando dicas de fotografia..." },
   { icon: "🏖️", anim: "float",  text: "Ja to com saudade dessa viagem..." },
   { icon: "🎭", anim: "pulse",  text: "Pesquisando eventos culturais..." },
-  { icon: "🚀", anim: "fly",    text: "Quase la! So mais um pouquinho..." },
-  { icon: "🎯", anim: "bounce", text: "Ajustando cada detalhe com carinho..." },
   { icon: "🌮", anim: "swing",  text: "Agora bateu fome... voltando ao roteiro..." },
+  { icon: "🗼", anim: "pulse",  text: "Conferindo os melhores pontos turisticos..." },
+  { icon: "🎵", anim: "swing",  text: "Criando a playlist da viagem... brincadeira..." },
+  { icon: "🧭", anim: "spin",   text: "Recalculando a rota mais bonita..." },
   { icon: "🐌", anim: "float",  text: "Devagar e sempre... qualidade leva tempo..." },
+  { icon: "🌍", anim: "spin",   text: "Dando a volta ao mundo pra encontrar o melhor..." },
   { icon: "💎", anim: "pulse",  text: "Polindo seu roteiro ate brilhar..." },
+  { icon: "🚀", anim: "fly",    text: "Quase la! So mais um pouquinho..." },
   { icon: "🎪", anim: "bounce", text: "Procurando experiencias unicas pra voce..." },
+  { icon: "🎯", anim: "bounce", text: "Ajustando cada detalhe com carinho..." },
+  { icon: "✨", anim: "spin",   text: "Dando os toques finais..." },
 ];
 
 const progressFill = document.getElementById('progressFill');
@@ -390,30 +386,26 @@ const progressDone = document.getElementById('progressDone');
 const stepIcon = document.getElementById('stepIcon');
 
 let progressInterval = null;
-let stepCycleInterval = null;
+let stepInterval = null;
 let currentProgress = 0;
 let apiDone = false;
 let redirectUrl = null;
 
 function showStep(step) {
-  // Fade out text
   progressStep.classList.add('fade-out');
   progressStep.classList.remove('fade-in');
 
-  // Swap icon with animation
   stepIcon.className = 'step-icon';
   stepIcon.textContent = step.icon;
   void stepIcon.offsetWidth;
   stepIcon.classList.add('anim-' + step.anim);
 
-  // Fade in new text
   setTimeout(() => {
     progressStep.textContent = step.text;
     progressStep.classList.remove('fade-out');
     progressStep.classList.add('fade-in');
   }, 150);
 
-  // Twemoji
   if (typeof twemoji !== 'undefined') {
     twemoji.parse(stepIcon, { folder: 'svg', ext: '.svg' });
   }
@@ -433,15 +425,9 @@ function startProgress() {
   progressPhase.classList.remove('hidden');
   progressDone.classList.remove('show');
 
-  let mainStepIndex = 0;
-  let tick = 0;
-
-  // Barra de progresso — nunca para, desacelera assintoticamente
+  // Barra de progresso — desacelera suavemente, nunca para
   progressInterval = setInterval(() => {
-    tick++;
-
     if (apiDone) {
-      // API retornou — acelera pra 100%
       currentProgress += (100 - currentProgress) * 0.3;
       if (currentProgress >= 99.8) {
         currentProgress = 100;
@@ -450,40 +436,25 @@ function startProgress() {
         finishProgress();
       }
     } else {
-      // Barra desacelera: avanca rapido no inicio, lento no fim
-      // Nunca passa de 99% sem a API ter retornado
+      // Desaceleracao mais lenta — leva ~60s pra chegar em ~95%
       const maxProgress = 99;
-      const speed = Math.max(0.08, (maxProgress - currentProgress) * 0.012);
+      const remaining = maxProgress - currentProgress;
+      const speed = Math.max(0.03, remaining * 0.004);
       currentProgress = Math.min(currentProgress + speed, maxProgress);
     }
 
     progressFill.style.width = currentProgress + '%';
     progressPercent.textContent = Math.round(currentProgress) + '%';
-
-    // Mudar etapa principal conforme progresso (ate ~88%)
-    if (mainStepIndex < MAIN_STEPS.length) {
-      const threshold = (mainStepIndex + 1) * (88 / MAIN_STEPS.length);
-      if (currentProgress >= threshold) {
-        showStep(MAIN_STEPS[mainStepIndex]);
-        mainStepIndex++;
-
-        // Quando acabaram as etapas principais, iniciar ciclo de extras
-        if (mainStepIndex >= MAIN_STEPS.length && !stepCycleInterval) {
-          startExtraCycle();
-        }
-      }
-    }
   }, 200);
-}
 
-// Ciclo de mensagens extras — roda a cada 4s infinitamente
-function startExtraCycle() {
-  let extraIndex = 0;
-  stepCycleInterval = setInterval(() => {
-    if (apiDone) return; // para de trocar se API ja voltou
-    showStep(EXTRA_STEPS[extraIndex % EXTRA_STEPS.length]);
-    extraIndex++;
-  }, 4000);
+  // Ciclo de etapas — troca a cada 3.5s, cicla infinitamente pela lista intercalada
+  let stepIndex = 0;
+  showStep(ALL_STEPS[0]);
+  stepInterval = setInterval(() => {
+    if (apiDone) return;
+    stepIndex++;
+    showStep(ALL_STEPS[stepIndex % ALL_STEPS.length]);
+  }, 3500);
 }
 
 function stopProgress() {
@@ -491,9 +462,9 @@ function stopProgress() {
     clearInterval(progressInterval);
     progressInterval = null;
   }
-  if (stepCycleInterval) {
-    clearInterval(stepCycleInterval);
-    stepCycleInterval = null;
+  if (stepInterval) {
+    clearInterval(stepInterval);
+    stepInterval = null;
   }
 }
 

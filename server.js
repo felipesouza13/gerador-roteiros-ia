@@ -469,7 +469,7 @@ TEMPLATE HTML:
 ${HTML_TEMPLATE}`;
 }
 
-// Extrair HTML limpo da resposta do Gemini e injetar Twemoji
+// Extrair HTML limpo da resposta do Gemini e injetar correções
 function extractHTML(text) {
   // Remove markdown code fences se existirem
   let html = text.trim();
@@ -483,7 +483,32 @@ function extractHTML(text) {
   }
   html = html.trim();
 
-  // Injetar Twemoji + CSS de emoji antes do </body> (garante bandeiras no Windows)
+  // FIX 1: Index-items — trocar scrollToSection por goToSection nos index-items
+  // (scrollToSection abre o menu lateral, goToSection faz scroll direto)
+  html = html.replace(/class="index-item"\s*onclick="scrollToSection\(/g,
+    'class="index-item" onclick="goToSection(');
+
+  // FIX 2: Garantir que goToSection existe no JS (caso Gemini não tenha incluído)
+  if (!html.includes('function goToSection')) {
+    html = html.replace('function scrollToSection',
+      'function goToSection(id){document.getElementById(id).scrollIntoView({behavior:\'smooth\',block:\'start\'})}\nfunction scrollToSection');
+  }
+
+  // FIX 3: Injetar share-bar se não existe
+  if (!html.includes('share-bar')) {
+    const shareBarHTML = `<div class="share-bar" style="position:sticky;top:60px;z-index:90;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px"><p style="font-size:.85rem;color:#555;font-weight:500">📤 Compartilhe este roteiro</p><button class="btn-share" onclick="copyLink()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:24px;background:#E8730C;color:#fff;border:none;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar link</button></div>`;
+    // Inserir após <div class="main">
+    html = html.replace(/<div class="main">\s*\n?\s*<div class="info-card">/,
+      '<div class="main">\n' + shareBarHTML + '\n  <div class="info-card">');
+  }
+
+  // FIX 4: Injetar copyLink se não existe
+  if (!html.includes('function copyLink')) {
+    const copyLinkJS = `function copyLink(){var b=document.querySelector('.btn-share');navigator.clipboard.writeText(window.location.href).then(function(){b.innerHTML='✅ Copiado!';b.classList.add('copied');setTimeout(function(){b.innerHTML='📋 Copiar link';b.classList.remove('copied')},2000)})}`;
+    html = html.replace('</script>', copyLinkJS + '\n</script>');
+  }
+
+  // FIX 5: Injetar Twemoji + CSS de emoji antes do </body> (bandeiras no Windows)
   const twemojiSnippet = `
 <style>img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:inline-block}</style>
 <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"><\/script>
