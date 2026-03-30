@@ -345,37 +345,38 @@ function getCheckedValues(name) {
 // ============================================
 
 // Etapas intercaladas: seria, engraçada, seria, engraçada... cicla infinitamente
+// Imagens Unsplash (400x500 crop) para versao desktop
 const ALL_STEPS = [
-  { icon: "✈️", anim: "fly",    text: "Buscando os melhores voos..." },
-  { icon: "🧳", anim: "shake",  text: "Arrumando as malas mentalmente..." },
-  { icon: "🏨", anim: "bounce", text: "Verificando hoteis e hospedagens..." },
-  { icon: "🐢", anim: "float",  text: "A IA ta pensando... ela e perfeccionista..." },
-  { icon: "🍽️", anim: "swing",  text: "Selecionando restaurantes incriveis..." },
-  { icon: "🍕", anim: "swing",  text: "Fazendo uma pausa pra pizza..." },
-  { icon: "🌤️", anim: "float",  text: "Checando clima e melhor epoca..." },
-  { icon: "🤖", anim: "pulse",  text: "A IA ta caprichando no seu roteiro..." },
-  { icon: "📞", anim: "shake",  text: "Pesquisando telefones importantes..." },
-  { icon: "🎒", anim: "bounce", text: "Verificando se cabe tudo na mochila..." },
-  { icon: "💰", anim: "bounce", text: "Calculando orcamento detalhado..." },
-  { icon: "☕", anim: "float",  text: "Tomando um cafezinho enquanto finaliza..." },
-  { icon: "🗺️", anim: "pulse",  text: "Montando roteiro dia a dia..." },
-  { icon: "🦜", anim: "bounce", text: "Consultando um papagaio local..." },
-  { icon: "📌", anim: "bounce", text: "Verificando reservas necessarias..." },
-  { icon: "🍷", anim: "swing",  text: "Degustando vinhos virtualmente..." },
-  { icon: "📸", anim: "pulse",  text: "Selecionando dicas de fotografia..." },
-  { icon: "🏖️", anim: "float",  text: "Ja to com saudade dessa viagem..." },
-  { icon: "🎭", anim: "pulse",  text: "Pesquisando eventos culturais..." },
-  { icon: "🌮", anim: "swing",  text: "Agora bateu fome... voltando ao roteiro..." },
-  { icon: "🗼", anim: "pulse",  text: "Conferindo os melhores pontos turisticos..." },
-  { icon: "🎵", anim: "swing",  text: "Criando a playlist da viagem... brincadeira..." },
-  { icon: "🧭", anim: "spin",   text: "Recalculando a rota mais bonita..." },
-  { icon: "🐌", anim: "float",  text: "Devagar e sempre... qualidade leva tempo..." },
-  { icon: "🌍", anim: "spin",   text: "Dando a volta ao mundo pra encontrar o melhor..." },
-  { icon: "💎", anim: "pulse",  text: "Polindo seu roteiro ate brilhar..." },
-  { icon: "🚀", anim: "fly",    text: "Quase la! So mais um pouquinho..." },
-  { icon: "🎪", anim: "bounce", text: "Procurando experiencias unicas pra voce..." },
-  { icon: "🎯", anim: "bounce", text: "Ajustando cada detalhe com carinho..." },
-  { icon: "✨", anim: "spin",   text: "Dando os toques finais..." },
+  { icon: "✈️", anim: "fly",    text: "Buscando os melhores voos...",                img: "https://images.unsplash.com/photo-1436491865332-7a61a109db05?w=400&h=500&fit=crop" },
+  { icon: "🧳", anim: "shake",  text: "Arrumando as malas mentalmente...",            img: "https://images.unsplash.com/photo-1553913861-c0fddf2619ee?w=400&h=500&fit=crop" },
+  { icon: "🏨", anim: "bounce", text: "Verificando hoteis e hospedagens...",           img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=500&fit=crop" },
+  { icon: "🐢", anim: "float",  text: "A IA ta pensando... ela e perfeccionista...",   img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=500&fit=crop" },
+  { icon: "🍽️", anim: "swing",  text: "Selecionando restaurantes incriveis...",       img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=500&fit=crop" },
+  { icon: "🍕", anim: "swing",  text: "Fazendo uma pausa pra pizza...",                img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=500&fit=crop" },
+  { icon: "🌤️", anim: "float",  text: "Checando clima e melhor epoca...",             img: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=500&fit=crop" },
+  { icon: "🤖", anim: "pulse",  text: "A IA ta caprichando no seu roteiro...",         img: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=500&fit=crop" },
+  { icon: "📞", anim: "shake",  text: "Pesquisando telefones importantes...",          img: "https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=400&h=500&fit=crop" },
+  { icon: "🎒", anim: "bounce", text: "Verificando se cabe tudo na mochila...",        img: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=400&h=500&fit=crop" },
+  { icon: "💰", anim: "bounce", text: "Calculando orcamento detalhado...",             img: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&h=500&fit=crop" },
+  { icon: "☕", anim: "float",  text: "Tomando um cafezinho enquanto finaliza...",     img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=500&fit=crop" },
+  { icon: "🗺️", anim: "pulse",  text: "Montando roteiro dia a dia...",                img: "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&h=500&fit=crop" },
+  { icon: "🦜", anim: "bounce", text: "Consultando um papagaio local...",              img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=500&fit=crop" },
+  { icon: "📌", anim: "bounce", text: "Verificando reservas necessarias...",           img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400&h=500&fit=crop" },
+  { icon: "🍷", anim: "swing",  text: "Degustando vinhos virtualmente...",             img: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop" },
+  { icon: "📸", anim: "pulse",  text: "Selecionando dicas de fotografia...",           img: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=500&fit=crop" },
+  { icon: "🏖️", anim: "float",  text: "Ja to com saudade dessa viagem...",            img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=500&fit=crop" },
+  { icon: "🎭", anim: "pulse",  text: "Pesquisando eventos culturais...",              img: "https://images.unsplash.com/photo-1460881680858-30d872d5b530?w=400&h=500&fit=crop" },
+  { icon: "🌮", anim: "swing",  text: "Agora bateu fome... voltando ao roteiro...",    img: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=500&fit=crop" },
+  { icon: "🗼", anim: "pulse",  text: "Conferindo os melhores pontos turisticos...",   img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=500&fit=crop" },
+  { icon: "🎵", anim: "swing",  text: "Criando a playlist da viagem... brincadeira...",img: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=500&fit=crop" },
+  { icon: "🧭", anim: "spin",   text: "Recalculando a rota mais bonita...",            img: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&h=500&fit=crop" },
+  { icon: "🐌", anim: "float",  text: "Devagar e sempre... qualidade leva tempo...",   img: "https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=400&h=500&fit=crop" },
+  { icon: "🌍", anim: "spin",   text: "Dando a volta ao mundo pra encontrar o melhor...", img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&h=500&fit=crop" },
+  { icon: "💎", anim: "pulse",  text: "Polindo seu roteiro ate brilhar...",            img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=500&fit=crop" },
+  { icon: "🚀", anim: "fly",    text: "Quase la! So mais um pouquinho...",             img: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=400&h=500&fit=crop" },
+  { icon: "🎪", anim: "bounce", text: "Procurando experiencias unicas pra voce...",    img: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=400&h=500&fit=crop" },
+  { icon: "🎯", anim: "bounce", text: "Ajustando cada detalhe com carinho...",         img: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=500&fit=crop" },
+  { icon: "✨", anim: "spin",   text: "Dando os toques finais...",                     img: "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400&h=500&fit=crop" },
 ];
 
 const progressFill = document.getElementById('progressFill');
@@ -436,11 +437,15 @@ function startProgress() {
         finishProgress();
       }
     } else {
-      // Desaceleracao mais lenta — leva ~60s pra chegar em ~95%
-      const maxProgress = 99;
-      const remaining = maxProgress - currentProgress;
-      const speed = Math.max(0.03, remaining * 0.004);
-      currentProgress = Math.min(currentProgress + speed, maxProgress);
+      // Rapido ate 75% (1% a cada 200ms = 15s), depois rasteja ate 99%
+      if (currentProgress < 75) {
+        currentProgress += 1.0;
+      } else {
+        const remaining = 99 - currentProgress;
+        const speed = Math.max(0.02, remaining * 0.003);
+        currentProgress += speed;
+      }
+      currentProgress = Math.min(currentProgress, 99);
     }
 
     progressFill.style.width = currentProgress + '%';

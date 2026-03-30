@@ -58,7 +58,7 @@ a:hover{color:#0e7490}
 .header-content p{font-size:.72rem;opacity:.9;margin-top:2px}
 .header-flag{font-size:1.2rem;margin-right:8px}
 .menu-btn{color:#fff;font-size:1.5rem;padding:4px}
-.main{max-width:600px;margin:0 auto;padding:16px 16px 80px}
+.main{max-width:900px;margin:0 auto;padding:16px 24px 80px}
 .info-card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .info-label{font-size:.82rem;color:#f57c00;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
@@ -159,6 +159,19 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
 .city-card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #f0f0f0}
 .city-card h4{font-size:1rem;font-weight:700;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .city-card p{font-size:.83rem;color:#555;line-height:1.6;margin-bottom:8px}
+.card-img{width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px}
+@media(min-width:768px){
+  .info-grid{grid-template-columns:1fr 1fr 1fr}
+  .section-card{padding:32px}
+  .activity-card,.place-card,.city-card,.reservation-card,.photo-card,.souvenir-card{padding:24px}
+}
+@media(max-width:768px){
+  .index-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .index-item{padding:10px;gap:8px;border-bottom:none;background:#f9fafb;border-radius:10px}
+  .index-icon{font-size:1rem;width:24px}
+  .index-text h4{font-size:.78rem}
+  .index-text p{display:none}
+}
 @media(max-width:400px){
   .info-grid{grid-template-columns:1fr}
   .header-content h1{font-size:1rem}
@@ -212,6 +225,7 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
       <div class="section-icon">🗺️</div>
       <div class="section-title">Índice do Roteiro</div>
     </div>
+    <div class="index-grid">
     <div class="index-item" onclick="goToSection('destinos')"><span class="index-icon">🏛️</span><div class="index-text"><h4>Sobre os Destinos</h4><p>História, clima e curiosidades</p></div></div>
     <div class="index-item" onclick="goToSection('orientacoes')"><span class="index-icon">📋</span><div class="index-text"><h4>Orientações Gerais</h4><p>Dinheiro, apps e alertas</p></div></div>
     <div class="index-item" onclick="goToSection('gastronomia')"><span class="index-icon">🍝</span><div class="index-text"><h4>Gastronomia</h4><p>Pratos típicos e restaurantes</p></div></div>
@@ -220,6 +234,7 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
     <div class="index-item" onclick="goToSection('financeiro')"><span class="index-icon">💵</span><div class="index-text"><h4>Resumo Financeiro</h4><p>Custos estimados do roteiro</p></div></div>
     <div class="index-item" onclick="goToSection('reservas')"><span class="index-icon">📌</span><div class="index-text"><h4>Reservas Importantes</h4><p>O que reservar antes</p></div></div>
     <div class="index-item" onclick="goToSection('dicas')"><span class="index-icon">💡</span><div class="index-text"><h4>Dicas Extras</h4><p>Souvenirs, fotos e emergências</p></div></div>
+    </div>
   </div>
   <div class="section-card" id="destinos">
     <div class="section-header"><div class="section-icon">🏛️</div><div class="section-title">Sobre os Destinos</div></div>
@@ -463,6 +478,8 @@ IMPORTANTE:
 - Adapte o número de cidades no header conforme os destinos informados.
 - O valor de totalDays no JavaScript deve ser o número correto de dias.
 - Use emojis de bandeiras dos países (ex: 🇫🇷 🇮🇹 🇺🇸) nos locais indicados no template.
+- Para TODOS os valores monetários (preços de restaurantes, hotéis, atividades, resumo financeiro, totais diários), exiba SEMPRE no formato: [valor em moeda local] (R$ [valor em reais]). Exemplo: "€ 25,00 (R$ 140,00)" ou "¥ 3.000 (R$ 110,00)". Use a cotação aproximada atual. No resumo financeiro, mantenha o mesmo formato dual em cada finance-value. Se o destino for no Brasil, use apenas R$.
+- INCLUA IMAGENS em cada atividade, restaurante, hotel e ponto turistico usando a tag <img> com URLs do Unsplash no formato: https://images.unsplash.com/photo-ID?w=600&h=300&fit=crop. Busque fotos relevantes para cada local (ex: Coliseu de Roma, pizza napolitana, hotel com vista). Adicione a tag <img> logo dentro de cada activity-card, place-card e city-card com style="width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px". Isso é OBRIGATORIO — todo card de atividade, restaurante, hotel e cidade DEVE ter uma imagem.
 
 TEMPLATE HTML:
 
@@ -508,16 +525,53 @@ function extractHTML(text) {
     html = html.replace('</script>', copyLinkJS + '\n</script>');
   }
 
-  // FIX 5: Injetar Twemoji + CSS de emoji antes do </body> (bandeiras no Windows)
+  // FIX 5: Injetar script que envolve index-items em .index-grid + imagens automáticas (desktop)
+  const autoFixSnippet = `
+<style>@media(max-width:768px){.auto-img{display:none!important}}</style>
+<script>
+(function(){
+  // Envolver index-items em .index-grid caso não exista
+  if(!document.querySelector('.index-grid')){
+    var items=document.querySelectorAll('.index-item');
+    if(items.length){
+      var grid=document.createElement('div');
+      grid.className='index-grid';
+      items[0].parentNode.insertBefore(grid,items[0]);
+      items.forEach(function(el){grid.appendChild(el)});
+    }
+  }
+  // Imagens automáticas via Wikipedia API (desktop only)
+  if(window.innerWidth>768){
+    document.querySelectorAll('.activity-card h4,.place-card h4,.city-card h4').forEach(function(h4){
+      var text=h4.textContent.replace(/[^\\w\\s]/g,'').trim();
+      if(text.length>2){
+        var img=document.createElement('img');
+        img.className='auto-img';
+        img.alt=text;
+        img.style.cssText='width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px;display:none';
+        h4.parentElement.insertBefore(img,h4);
+        fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(text))
+          .then(function(r){return r.json()})
+          .then(function(d){if(d.thumbnail){img.src=d.thumbnail.source;img.style.display=''}})
+          .catch(function(){})
+      }
+    });
+  }
+})();
+<\/script>`;
+
+  // FIX 6: Injetar Twemoji + CSS de emoji antes do </body> (bandeiras no Windows)
   const twemojiSnippet = `
 <style>img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:inline-block}</style>
 <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"><\/script>
 <script>if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{folder:'svg',ext:'.svg'})}<\/script>`;
 
+  const closingSnippets = autoFixSnippet + twemojiSnippet;
+
   if (html.includes('</body>')) {
-    html = html.replace('</body>', twemojiSnippet + '\n</body>');
+    html = html.replace('</body>', closingSnippets + '\n</body>');
   } else {
-    html += twemojiSnippet;
+    html += closingSnippets;
   }
 
   return html;
