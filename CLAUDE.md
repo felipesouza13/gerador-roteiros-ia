@@ -25,6 +25,9 @@ O servidor roda na porta **5780** → http://localhost:5780
 4. Server salva em `roteiros/{id}.html`
 5. Client redireciona para `/roteiro/{id}`
 
+## Idioma
+- Toda comunicação e código deve ser em **pt-BR**
+
 ## Notas
 - A geração pode levar 30-60 segundos (o template é grande)
 - Os roteiros são salvos como arquivos HTML estáticos, sem banco de dados

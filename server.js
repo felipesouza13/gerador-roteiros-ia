@@ -33,6 +33,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Roteiro [DESTINO] — [QTD_DIAS] Dias</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -53,7 +54,11 @@ a:hover{color:#0e7490}
 .nav-btn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:10px;color:#555;font-size:.88rem;font-weight:500;transition:all .2s;border:none;background:none;cursor:pointer;text-align:left}
 .nav-btn:hover{background:#FFF5F0;color:#E8730C}
 .nav-btn-icon{font-size:1.1rem;width:28px;text-align:center}
-.header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,#E8730C,#D4640A);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(232,115,12,.3)}
+.header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,#E8730C,#D4640A);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(232,115,12,.3);gap:10px}
+.header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.header-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;text-decoration:none;white-space:nowrap}
+.header-btn:hover{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.7);color:#fff}
+.header-btn.copied{background:#4CAF50;border-color:#4CAF50}
 .header-content h1{font-size:1.15rem;font-weight:700;letter-spacing:.3px}
 .header-content p{font-size:.72rem;opacity:.9;margin-top:2px}
 .header-flag{font-size:1.2rem;margin-right:8px}
@@ -147,11 +152,6 @@ a:hover{color:#0e7490}
 .footer{text-align:center;padding:24px 16px;color:#aaa;font-size:.78rem;border-top:1px solid rgba(0,0,0,.06);margin-top:20px}
 .back-to-top{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#E8730C;color:#fff;border:none;border-radius:24px;padding:10px 20px;font-size:.82rem;font-weight:600;cursor:pointer;z-index:90;box-shadow:0 4px 12px rgba(232,115,12,.3);display:flex;align-items:center;gap:6px;transition:all .2s}
 .back-to-top:hover{background:#C45A00;transform:translateX(-50%) translateY(-2px)}
-.share-bar{position:sticky;top:60px;z-index:90;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.share-bar p{font-size:.85rem;color:#555;font-weight:500}
-.btn-share{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:24px;background:#E8730C;color:#fff;border:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
-.btn-share:hover{background:#C45A00;transform:translateY(-1px);box-shadow:0 4px 12px rgba(232,115,12,.3)}
-.btn-share.copied{background:#4CAF50}
 .budget-alert{background:#FFF3E0;border:2px solid #FF9800;border-radius:14px;padding:18px;margin-bottom:20px}
 .budget-alert h4{color:#E65100;font-size:.95rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .budget-alert p{color:#555;font-size:.85rem;line-height:1.6}
@@ -171,6 +171,10 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
   .index-icon{font-size:1rem;width:24px}
   .index-text h4{font-size:.78rem}
   .index-text p{display:none}
+}
+@media(max-width:480px){
+  .header-btn span.btn-text{display:none}
+  .header-btn{padding:7px 10px;font-size:.7rem}
 }
 @media(max-width:400px){
   .info-grid{grid-template-columns:1fr}
@@ -203,13 +207,13 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
     <h1><span class="header-flag">[BANDEIRA_PAIS]</span>[CIDADE1] · [CIDADE2] · [CIDADE3]</h1>
     <p>Roteiro completo — [QTD_DIAS] dias de [OBJETIVO_VIAGEM] para [PERFIL_VIAJANTES]</p>
   </div>
-  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <div class="header-actions">
+    <button class="header-btn" onclick="copyLink()">📋 Copiar link</button>
+    <a class="header-btn" href="/">✨ Novo roteiro</a>
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  </div>
 </div>
 <div class="main">
-  <div class="share-bar">
-    <p>📤 Compartilhe este roteiro</p>
-    <button class="btn-share" onclick="copyLink()">📋 Copiar link</button>
-  </div>
   <div class="info-card">
     <div class="info-grid">
       <div><div class="info-label">📅 Período</div><div class="info-value">[DATA_INICIO] – [DATA_FIM]</div></div>
@@ -379,7 +383,7 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
   </div>
 </div>
 <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><span style="font-size:1rem">↑</span> Voltar ao topo</button>
-<script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <script>
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')}
 function goToSection(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'})}
@@ -388,8 +392,8 @@ let currentDay=1;const totalDays=[QTD_DIAS];
 function showDay(n){currentDay=n;document.querySelectorAll('.day-content').forEach(d=>d.classList.remove('active'));const t=document.getElementById('day-'+n);if(t)t.classList.add('active');document.querySelectorAll('.day-pill').forEach((p,i)=>{p.classList.toggle('active',i===n-1)});document.querySelectorAll('.day-dot').forEach((d,i)=>{d.classList.toggle('active',i===n-1)});const pill=document.querySelectorAll('.day-pill')[n-1];if(pill)pill.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
 function prevDay(){if(currentDay>1)showDay(currentDay-1)}
 function nextDay(){if(currentDay<totalDays)showDay(currentDay+1)}
-function copyLink(){var b=document.querySelector('.btn-share');navigator.clipboard.writeText(window.location.href).then(function(){b.innerHTML='✅ Copiado!';b.classList.add('copied');setTimeout(function(){b.innerHTML='📋 Copiar link';b.classList.remove('copied')},2000)})}
-if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{folder:'svg',ext:'.svg'})}
+function copyLink(){var b=document.querySelector('.header-btn');navigator.clipboard.writeText(window.location.href).then(function(){b.innerHTML='✅ Copiado!';b.classList.add('copied');setTimeout(function(){b.innerHTML='📋 Copiar link';b.classList.remove('copied')},2000)})}
+if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{base:'https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/',folder:'svg',ext:'.svg'})}
 </script>
 </body>
 </html>`;
@@ -479,7 +483,7 @@ IMPORTANTE:
 - O valor de totalDays no JavaScript deve ser o número correto de dias.
 - Use emojis de bandeiras dos países (ex: 🇫🇷 🇮🇹 🇺🇸) nos locais indicados no template.
 - Para TODOS os valores monetários (preços de restaurantes, hotéis, atividades, resumo financeiro, totais diários), exiba SEMPRE no formato: [valor em moeda local] (R$ [valor em reais]). Exemplo: "€ 25,00 (R$ 140,00)" ou "¥ 3.000 (R$ 110,00)". Use a cotação aproximada atual. No resumo financeiro, mantenha o mesmo formato dual em cada finance-value. Se o destino for no Brasil, use apenas R$.
-- INCLUA IMAGENS em cada atividade, restaurante, hotel e ponto turistico usando a tag <img> com URLs do Unsplash no formato: https://images.unsplash.com/photo-ID?w=600&h=300&fit=crop. Busque fotos relevantes para cada local (ex: Coliseu de Roma, pizza napolitana, hotel com vista). Adicione a tag <img> logo dentro de cada activity-card, place-card e city-card com style="width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px". Isso é OBRIGATORIO — todo card de atividade, restaurante, hotel e cidade DEVE ter uma imagem.
+- NÃO inclua tags <img> no HTML. As imagens serão adicionadas automaticamente pelo sistema.
 
 TEMPLATE HTML:
 
@@ -500,6 +504,9 @@ function extractHTML(text) {
   }
   html = html.trim();
 
+  // FIX 0: Remover imagens Unsplash que o Gemini possa ter incluído
+  html = html.replace(/<img[^>]*src="[^"]*unsplash\.com[^"]*"[^>]*\/?>/gi, '');
+
   // FIX 1: Index-items — trocar scrollToSection por goToSection nos index-items
   // (scrollToSection abre o menu lateral, goToSection faz scroll direto)
   html = html.replace(/class="index-item"\s*onclick="scrollToSection\(/g,
@@ -511,23 +518,25 @@ function extractHTML(text) {
       'function goToSection(id){document.getElementById(id).scrollIntoView({behavior:\'smooth\',block:\'start\'})}\nfunction scrollToSection');
   }
 
-  // FIX 3: Injetar share-bar se não existe
-  if (!html.includes('share-bar')) {
-    const shareBarHTML = `<div class="share-bar" style="position:sticky;top:60px;z-index:90;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px"><p style="font-size:.85rem;color:#555;font-weight:500">📤 Compartilhe este roteiro</p><button class="btn-share" onclick="copyLink()" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:24px;background:#E8730C;color:#fff;border:none;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar link</button></div>`;
-    // Inserir após <div class="main">
-    html = html.replace(/<div class="main">\s*\n?\s*<div class="info-card">/,
-      '<div class="main">\n' + shareBarHTML + '\n  <div class="info-card">');
+  // FIX 3: Injetar botões do header (copiar link + novo roteiro) se não existem
+  if (!html.includes('header-actions')) {
+    const headerActionsHTML = `<div class="header-actions"><button class="header-btn" onclick="copyLink()">📋 Copiar link</button><a class="header-btn" href="/">✨ Novo roteiro</a><button class="menu-btn" onclick="toggleMenu()">☰</button></div>`;
+    // Substituir o menu-btn isolado pelo bloco completo
+    html = html.replace(/<button class="menu-btn"[^>]*>☰<\/button>\s*<\/div>/,
+      headerActionsHTML + '</div>');
   }
+  // Remover share-bar antiga se existir
+  html = html.replace(/<div class="share-bar">[\s\S]*?<\/div>\s*<\/div>/m, '');
 
   // FIX 4: Injetar copyLink se não existe
   if (!html.includes('function copyLink')) {
-    const copyLinkJS = `function copyLink(){var b=document.querySelector('.btn-share');navigator.clipboard.writeText(window.location.href).then(function(){b.innerHTML='✅ Copiado!';b.classList.add('copied');setTimeout(function(){b.innerHTML='📋 Copiar link';b.classList.remove('copied')},2000)})}`;
+    const copyLinkJS = `function copyLink(){var b=document.querySelector('.header-btn');navigator.clipboard.writeText(window.location.href).then(function(){b.innerHTML='✅ Copiado!';b.classList.add('copied');setTimeout(function(){b.innerHTML='📋 Copiar link';b.classList.remove('copied')},2000)})}`;
     html = html.replace('</script>', copyLinkJS + '\n</script>');
   }
 
   // FIX 5: Injetar script que envolve index-items em .index-grid + imagens automáticas (desktop)
   const autoFixSnippet = `
-<style>@media(max-width:768px){.auto-img{display:none!important}}</style>
+<style>.auto-img{width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px}</style>
 <script>
 (function(){
   // Envolver index-items em .index-grid caso não exista
@@ -540,15 +549,14 @@ function extractHTML(text) {
       items.forEach(function(el){grid.appendChild(el)});
     }
   }
-  // Imagens automáticas via Wikipedia API (desktop only)
-  if(window.innerWidth>768){
-    document.querySelectorAll('.activity-card h4,.place-card h4,.city-card h4').forEach(function(h4){
+  // Imagens automáticas via Wikipedia API
+  document.querySelectorAll('.activity-card h4,.place-card h4,.city-card h4').forEach(function(h4){
       var text=h4.textContent.replace(/[^\\w\\s]/g,'').trim();
       if(text.length>2){
         var img=document.createElement('img');
         img.className='auto-img';
         img.alt=text;
-        img.style.cssText='width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:200px;display:none';
+        img.style.display='none';
         h4.parentElement.insertBefore(img,h4);
         fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(text))
           .then(function(r){return r.json()})
@@ -556,15 +564,20 @@ function extractHTML(text) {
           .catch(function(){})
       }
     });
-  }
 })();
 <\/script>`;
 
-  // FIX 6: Injetar Twemoji + CSS de emoji antes do </body> (bandeiras no Windows)
+  // FIX 6: Injetar CSS dos botões do header se não existe
+  if (!html.includes('header-actions')) {
+    const headerCSS = `<style>.header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}.header-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;text-decoration:none;white-space:nowrap}.header-btn:hover{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.7);color:#fff}.header-btn.copied{background:#4CAF50;border-color:#4CAF50}</style>`;
+    html = html.replace('</head>', headerCSS + '\n</head>');
+  }
+
+  // FIX 7: Injetar Twemoji + CSS de emoji antes do </body> (bandeiras no Windows)
   const twemojiSnippet = `
 <style>img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:inline-block}</style>
-<script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"><\/script>
-<script>if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{folder:'svg',ext:'.svg'})}<\/script>`;
+<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"><\/script>
+<script>if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{base:'https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/',folder:'svg',ext:'.svg'})}<\/script>`;
 
   const closingSnippets = autoFixSnippet + twemojiSnippet;
 

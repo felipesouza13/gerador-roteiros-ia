@@ -5,7 +5,10 @@
       "mcp__claude_ai_Context7__query-docs",
       "Bash(npm init:*)",
       "Bash(taskkill //PID 46248 //F)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "WebFetch(domain:roteirocomia.flpautomatik.com)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:localhost)"
     ]
   },
   "enabledPlugins": {
