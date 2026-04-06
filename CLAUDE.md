@@ -28,6 +28,24 @@ O servidor roda na porta **5780** → http://localhost:5780
 ## Idioma
 - Toda comunicação e código deve ser em **pt-BR**
 
+## Deploy na VPS
+
+**Servidor:** 155.117.40.112 | **User:** administrator | **Domínio:** roteirocomia.flpautomatik.com
+
+Para atualizar a VPS após alterações locais, rodar **dois comandos**:
+
+**1. Enviar arquivos (da máquina local):**
+```bash
+rsync -avz --exclude node_modules --exclude .env --exclude .git --exclude roteiros -e ssh ./ administrator@155.117.40.112:/var/www/gerador-roteiros-ia/
+```
+
+**2. Reiniciar o app (na VPS via SSH):**
+```bash
+ssh administrator@155.117.40.112 "cd /var/www/gerador-roteiros-ia && npm install && pm2 restart gerador-roteiros"
+```
+
+> O `--exclude .env` protege a config do servidor. O `--exclude roteiros` protege os roteiros já gerados.
+
 ## Notas
 - A geração pode levar 30-60 segundos (o template é grande)
 - Os roteiros são salvos como arquivos HTML estáticos, sem banco de dados

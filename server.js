@@ -573,13 +573,61 @@ function extractHTML(text) {
     html = html.replace('</head>', headerCSS + '\n</head>');
   }
 
+  // ADS: Injetar Google AdSense script no <head>
+  if (!html.includes('adsbygoogle')) {
+    const adsenseHead = `<meta name="google-adsense-account" content="ca-pub-4364568314775092">\n<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4364568314775092" crossorigin="anonymous"><\/script>`;
+    html = html.replace('</head>', adsenseHead + '\n</head>');
+  }
+
   // FIX 7: Injetar Twemoji + CSS de emoji antes do </body> (bandeiras no Windows)
   const twemojiSnippet = `
 <style>img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:inline-block}</style>
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"><\/script>
 <script>if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{base:'https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/',folder:'svg',ext:'.svg'})}<\/script>`;
 
-  const closingSnippets = autoFixSnippet + twemojiSnippet;
+  // ADS: Snippet para injetar ads nos roteiros (entre secoes, sidebar, sticky bottom)
+  const adsSnippet = `
+<style>
+.ad-container{max-width:728px;margin:20px auto;text-align:center;overflow:hidden}
+.ad-sticky-bottom{position:fixed;bottom:0;left:0;width:100%;text-align:center;background:rgba(255,255,255,.95);box-shadow:0 -2px 10px rgba(0,0,0,.1);padding:8px 0;z-index:80}
+.ad-sidebar{margin-top:20px;padding:10px;text-align:center}
+.footer{padding-bottom:110px!important}
+@media(max-width:768px){.ad-sticky-bottom ins{width:320px;height:50px}}
+</style>
+<script>
+(function(){
+  function createAd(slot,style){
+    var d=document.createElement('div');
+    d.className='ad-container';
+    d.innerHTML='<ins class="adsbygoogle" style="'+(style||'display:block')+'" data-ad-client="ca-pub-4364568314775092" data-ad-slot="'+slot+'" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+    return d;
+  }
+  // Ads entre secoes (a cada 2 section-cards)
+  var sections=document.querySelectorAll('.section-card');
+  for(var i=1;i<sections.length;i+=2){
+    var ad=createAd('AD_SLOT_ROTEIRO_'+(Math.floor(i/2)+1));
+    sections[i].parentNode.insertBefore(ad,sections[i].nextSibling);
+    (adsbygoogle=window.adsbygoogle||[]).push({});
+  }
+  // Ad na sidebar
+  var sidebar=document.querySelector('.sidebar-nav');
+  if(sidebar){
+    var sAd=document.createElement('div');
+    sAd.className='ad-sidebar';
+    sAd.innerHTML='<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-4364568314775092" data-ad-slot="AD_SLOT_SIDEBAR" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+    sidebar.parentNode.insertBefore(sAd,sidebar.nextSibling);
+    (adsbygoogle=window.adsbygoogle||[]).push({});
+  }
+  // Banner fixo no rodape
+  var sticky=document.createElement('div');
+  sticky.className='ad-sticky-bottom';
+  sticky.innerHTML='<ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="ca-pub-4364568314775092" data-ad-slot="AD_SLOT_STICKY"></ins>';
+  document.body.appendChild(sticky);
+  (adsbygoogle=window.adsbygoogle||[]).push({});
+})();
+<\/script>`;
+
+  const closingSnippets = autoFixSnippet + twemojiSnippet + adsSnippet;
 
   if (html.includes('</body>')) {
     html = html.replace('</body>', closingSnippets + '\n</body>');
@@ -590,7 +638,46 @@ function extractHTML(text) {
   return html;
 }
 
+// SEO: Extrair destino e dias do titulo do roteiro
+function parseTituloRoteiro(html) {
+  const match = html.match(/<title>Roteiro\s+(.+?)\s+[—–-]\s+(\d+)\s+Dias?<\/title>/i);
+  if (!match) return null;
+  return { destino: match[1], dias: match[2] };
+}
+
 // Rotas
+
+// Sitemap dinamico
+app.get('/sitemap.xml', async (req, res) => {
+  const baseUrl = 'https://roteirocomia.flpautomatik.com';
+  let urls = `  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>\n`;
+
+  try {
+    const files = await fs.readdir(ROTEIROS_DIR);
+    for (const file of files.filter(f => f.endsWith('.html'))) {
+      const id = file.replace('.html', '');
+      const stat = await fs.stat(path.join(ROTEIROS_DIR, file));
+      const lastmod = stat.mtime.toISOString().split('T')[0];
+      urls += `  <url>
+    <loc>${baseUrl}/roteiro/${id}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>\n`;
+    }
+  } catch {}
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}</urlset>`;
+
+  res.type('application/xml').send(sitemap);
+});
+
 app.post('/api/gerar-roteiro', async (req, res) => {
   try {
     const { destinos, data, viajantes, objetivo, atividades, estilo, transporte, orcamento } = req.body;
@@ -624,10 +711,43 @@ app.post('/api/gerar-roteiro', async (req, res) => {
 app.get('/roteiro/:id', async (req, res) => {
   try {
     const filePath = path.join(ROTEIROS_DIR, `${req.params.id}.html`);
-    const html = await fs.readFile(filePath, 'utf-8');
+    let html = await fs.readFile(filePath, 'utf-8');
+
+    // SEO: Injetar meta tags dinamicas
+    const info = parseTituloRoteiro(html);
+    if (info && !html.includes('meta name="description"')) {
+      const canonicalUrl = `https://roteirocomia.flpautomatik.com/roteiro/${req.params.id}`;
+      const desc = `Roteiro de viagem para ${info.destino} com ${info.dias} dias. Guia completo com restaurantes, hoteis, atividades dia a dia e orcamento detalhado.`;
+      const seoTags = [
+        `<meta name="description" content="${desc}">`,
+        `<link rel="canonical" href="${canonicalUrl}">`,
+        `<meta property="og:title" content="Roteiro ${info.destino} — ${info.dias} Dias | RoteiroPro">`,
+        `<meta property="og:description" content="${desc}">`,
+        `<meta property="og:url" content="${canonicalUrl}">`,
+        `<meta property="og:type" content="article">`,
+        `<meta property="og:locale" content="pt_BR">`,
+        `<meta property="og:site_name" content="RoteiroPro">`,
+        `<meta name="twitter:card" content="summary">`,
+        `<meta name="twitter:title" content="Roteiro ${info.destino} — ${info.dias} Dias">`,
+        `<meta name="twitter:description" content="${desc}">`,
+        `<script type="application/ld+json">${JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "TravelAction",
+          "name": `Roteiro de viagem para ${info.destino}`,
+          "description": desc,
+          "object": {
+            "@type": "Trip",
+            "name": `Viagem para ${info.destino}`,
+            "itinerary": { "@type": "ItemList", "numberOfItems": parseInt(info.dias) }
+          }
+        })}</script>`
+      ].join('\n');
+      html = html.replace('</head>', seoTags + '\n</head>');
+    }
+
     res.type('html').send(html);
   } catch {
-    res.status(404).send('<h1>Roteiro não encontrado</h1><p><a href="/">Voltar ao início</a></p>');
+    res.status(404).send('<h1>Roteiro nao encontrado</h1><p><a href="/">Voltar ao inicio</a></p>');
   }
 });
 
