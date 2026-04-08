@@ -12,7 +12,8 @@
       "Bash(ssh:*)",
       "Bash(grep -n \"app\\\\\\\\.get\\\\|app\\\\\\\\.post\\\\|routes\\\\|sitemap\\\\|robots\" \"D:\\\\Coding\\\\gerador-roteiros-ia\\\\server.js\")",
       "Bash(grep -h '<title>' D:/Coding/gerador-roteiros-ia/roteiros/*.html)",
-      "Bash(scp:*)"
+      "Bash(scp:*)",
+      "Bash(git -C \"D:\\\\Coding\\\\gerador-roteiros-ia\" status --short)"
     ]
   },
   "enabledPlugins": {
