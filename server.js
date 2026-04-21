@@ -1,13 +1,16 @@
 require('dotenv').config();
 const express = require('express');
-const { GoogleGenAI } = require('@google/genai');
+const OpenAI = require('openai');
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 5780;
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const deepseek = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY,
+});
 const ROTEIROS_DIR = path.join(__dirname, 'roteiros');
 
 // LiveReload (dev only)
@@ -27,14 +30,14 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 app.use(express.static('public'));
 
-// Template HTML do roteiro (prompt base)
-const HTML_TEMPLATE = `<!DOCTYPE html>
+// Template separado em partes: CSS/JS estáticos + body template para a AI
+const HTML_HEAD = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>Roteiro [DESTINO] — [QTD_DIAS] Dias</title>
+<title>%%TITLE%%</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -183,8 +186,10 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
 }
 </style>
 </head>
-<body>
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<body>`;
+
+// Template do BODY — só esta parte vai no prompt para a AI preencher
+const BODY_TEMPLATE_PART1 = `<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <h2>[BANDEIRA_PAIS] [DESTINO_COMPLETO]</h2>
@@ -220,8 +225,8 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
       <div><div class="info-label">✈️ Destinos</div><div class="info-value">[CIDADE1] → [CIDADE2] → [CIDADE3]</div></div>
       <div><div class="info-label">👫 Viajantes</div><div class="info-value">[PERFIL_VIAJANTES]</div></div>
       <div><div class="info-label">🎯 Objetivo</div><div class="info-value">[OBJETIVO_VIAGEM]</div></div>
+      <div><div class="info-label">🛫 Partida</div><div class="info-value">[CIDADE_ORIGEM]</div></div>
       <div><div class="info-label">🚌 Transporte</div><div class="info-value">[TIPO_TRANSPORTE]</div></div>
-      <div><div class="info-label">🔥 Orçamento</div><div class="info-value">[ORCAMENTO_TOTAL]</div></div>
     </div>
   </div>
   <div class="section-card">
@@ -341,17 +346,30 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
       </div>
       <div class="day-total">💰 Total estimado Dia 1: [VALOR]</div>
     </div>
-  </div>
-  <div class="section-card" id="financeiro">
-    <div class="section-header"><div class="section-icon">💵</div><div class="section-title">Resumo Financeiro</div></div>
+  </div>`;
+
+// Template PARTE 2: financeiro, reservas, dicas, footer
+const BODY_TEMPLATE_PART2 = `  <div class="section-card" id="financeiro">
+    <div class="section-header"><div class="section-icon">💵</div><div class="section-title">Resumo Financeiro Estimado</div></div>
     <div class="section-content">
-      <div class="finance-row"><span class="finance-label">🏨 Hospedagem</span><span class="finance-value">R$ [VALOR]</span></div>
-      <div class="finance-row"><span class="finance-label">✈️ Passagens Aéreas</span><span class="finance-value">R$ [VALOR]</span></div>
-      <div class="finance-row"><span class="finance-label">🚄 Transporte</span><span class="finance-value">R$ [VALOR]</span></div>
-      <div class="finance-row"><span class="finance-label">🍝 Alimentação</span><span class="finance-value">R$ [VALOR]</span></div>
-      <div class="finance-row"><span class="finance-label">🏛️ Passeios</span><span class="finance-value">R$ [VALOR]</span></div>
-      <div class="finance-total"><span class="finance-label">💰 Total Estimado</span><span class="finance-value">≈ R$ [TOTAL]</span></div>
-      <div class="finance-notes"><p>📌 [Notas sobre câmbio e valores]</p></div>
+      <h3 style="font-size:1rem;margin:6px 0 12px;color:#555">🌍 Gastos no destino</h3>
+      <div class="finance-row"><span class="finance-label">🏨 Hospedagem ([N] noites)</span><span class="finance-value">[valor moeda local] (R$ [reais])</span></div>
+      <div class="finance-row"><span class="finance-label">🍝 Alimentação</span><span class="finance-value">[valor moeda local] (R$ [reais])</span></div>
+      <div class="finance-row"><span class="finance-label">🚄 Transporte local</span><span class="finance-value">[valor moeda local] (R$ [reais])</span></div>
+      <div class="finance-row"><span class="finance-label">🏛️ Passeios e atividades</span><span class="finance-value">[valor moeda local] (R$ [reais])</span></div>
+      <div class="finance-row"><span class="finance-label">🛍️ Compras e extras</span><span class="finance-value">[valor moeda local] (R$ [reais])</span></div>
+      <div class="finance-row" style="border-top:1px dashed #ddd;margin-top:8px;padding-top:10px"><span class="finance-label"><strong>Subtotal destino</strong></span><span class="finance-value"><strong>≈ R$ [SUBTOTAL_DESTINO]</strong></span></div>
+
+      <h3 style="font-size:1rem;margin:22px 0 12px;color:#555">✈️ Passagens aéreas (separado)</h3>
+      <div class="finance-row"><span class="finance-label">Voo ida+volta: [CIDADE_ORIGEM] → [CIDADE_DESTINO_PRINCIPAL]</span><span class="finance-value">R$ [PASSAGENS]</span></div>
+      <p style="font-size:.82rem;color:#777;margin:6px 2px 0">💡 Estimativa para classe econômica nas datas informadas. Varia conforme antecedência e temporada.</p>
+
+      <div class="finance-total" style="margin-top:18px"><span class="finance-label">💰 Total estimado da viagem</span><span class="finance-value">≈ R$ [TOTAL_GERAL]</span></div>
+
+      <div class="finance-notes">
+        <p>💱 <strong>Cotação de referência:</strong> câmbio turístico (≈ 6% acima do comercial) — simula o valor real pago por brasileiros com cartão ou remessa internacional.</p>
+        <p>👉 Para câmbio mais vantajoso, considere <a href="https://wise.com/" target="_blank" rel="noopener">Wise</a> ou <a href="https://www.remessaonline.com.br/" target="_blank" rel="noopener">Remessa Online</a>.</p>
+      </div>
     </div>
   </div>
   <div class="section-card" id="reservas">
@@ -381,14 +399,16 @@ img.emoji{height:1.1em;width:1.1em;margin:0 .05em;vertical-align:-.15em;display:
     <p>[Mensagem de despedida]</p>
     <p>Roteiro completo • [DESTINO] • [PERIODO] • Feito com 🧡</p>
   </div>
-</div>
-<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><span style="font-size:1rem">↑</span> Voltar ao topo</button>
+</div>`;
+
+// Scripts estáticos — injetados depois, a AI não precisa gerar
+const HTML_SCRIPTS = `<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><span style="font-size:1rem">↑</span> Voltar ao topo</button>
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <script>
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')}
 function goToSection(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'})}
 function scrollToSection(id){toggleMenu();setTimeout(()=>{goToSection(id)},300)}
-let currentDay=1;const totalDays=[QTD_DIAS];
+let currentDay=1;const totalDays=%%TOTAL_DAYS%%;
 function showDay(n){currentDay=n;document.querySelectorAll('.day-content').forEach(d=>d.classList.remove('active'));const t=document.getElementById('day-'+n);if(t)t.classList.add('active');document.querySelectorAll('.day-pill').forEach((p,i)=>{p.classList.toggle('active',i===n-1)});document.querySelectorAll('.day-dot').forEach((d,i)=>{d.classList.toggle('active',i===n-1)});const pill=document.querySelectorAll('.day-pill')[n-1];if(pill)pill.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
 function prevDay(){if(currentDay>1)showDay(currentDay-1)}
 function nextDay(){if(currentDay<totalDays)showDay(currentDay+1)}
@@ -398,10 +418,25 @@ if(typeof twemoji!=='undefined'){twemoji.parse(document.body,{base:'https://cdn.
 </body>
 </html>`;
 
-function parseBudget(str) {
-  // Extrai valor numérico de string como "R$ 15.000,00"
-  const clean = str.replace(/[^\d,]/g, '').replace(',', '.');
-  return parseFloat(clean) || 0;
+// Busca cotacao comercial BRL e aplica margem turistica (~6%) para simular Wise/Remessa
+const TOURIST_MARGIN = 0.06;
+
+async function getTouristRates() {
+  try {
+    const r = await fetch('https://economia.awesomeapi.com.br/json/last/EUR-BRL,USD-BRL,GBP-BRL,JPY-BRL');
+    const d = await r.json();
+    const apply = v => (parseFloat(v) * (1 + TOURIST_MARGIN)).toFixed(2);
+    return {
+      EUR: apply(d.EURBRL.bid),
+      USD: apply(d.USDBRL.bid),
+      GBP: apply(d.GBPBRL.bid),
+      JPY: apply(d.JPYBRL.bid),
+      source: 'awesomeapi',
+    };
+  } catch (err) {
+    console.warn('AwesomeAPI falhou, usando fallback estatico:', err.message);
+    return { EUR: '6.40', USD: '5.90', GBP: '7.40', JPY: '0.042', source: 'fallback' };
+  }
 }
 
 function parseDays(dataStr) {
@@ -418,52 +453,9 @@ function parseDays(dataStr) {
   return diff > 0 ? diff : 0;
 }
 
-function checkBudget(data) {
-  const budget = parseBudget(data.orcamento);
-  const days = parseDays(data.data);
-  if (!budget || !days) return null;
-
-  // Referências mínimas por pessoa/dia por estilo (em BRL)
-  const minPerDay = {
-    'Mochilao': 150,
-    'Economico': 250,
-    'Moderado': 450,
-    'Confortavel': 700,
-    'Aventura': 400,
-    'Luxo': 1200,
-  };
-
-  const style = data.estilo || 'Moderado';
-  const perDay = minPerDay[style] || 450;
-
-  // Estima número de viajantes (tenta extrair número)
-  const travelersMatch = data.viajantes.match(/(\d+)/);
-  const travelers = travelersMatch ? parseInt(travelersMatch[1], 10) : 2;
-
-  const minBudget = perDay * days * travelers;
-
-  if (budget < minBudget * 0.5) {
-    return {
-      alert: true,
-      suggested: minBudget,
-      days,
-      travelers,
-      perPersonPerDay: perDay,
-    };
-  }
-  return null;
-}
-
-function buildPrompt(data, budgetWarning) {
-  let budgetNote = '';
-  if (budgetWarning) {
-    budgetNote = `
-ALERTA DE ORÇAMENTO: O orçamento informado parece baixo para ${budgetWarning.days} dias e ${budgetWarning.travelers} viajante(s) no estilo ${data.estilo}. O valor sugerido seria aproximadamente R$ ${budgetWarning.suggested.toLocaleString('pt-BR')}. INCLUA no HTML gerado, logo após o share-bar e antes do info-card, um div com classe "budget-alert" contendo um aviso amigável sobre o orçamento estar abaixo do recomendado, sugerindo aumentar o valor ou reduzir a duração da viagem. Mesmo assim, gere o roteiro completo tentando se adequar ao orçamento informado.`;
-  }
-
-  return `Gere um roteiro de viagem completo preenchendo o template HTML abaixo. Substitua TODOS os marcadores entre colchetes [...] por conteúdo real, verificável e detalhado. Mantenha o CSS e JavaScript exatamente como estão. Gere o HTML completo e funcional. Use informações REAIS (nomes de restaurantes, hotéis, museus, telefones e links que existem de verdade). Adapte a quantidade de dias, cidades e conteúdo conforme os dados do usuário. Cada dia deve ter 5-8 atividades detalhadas. O orçamento total deve fechar dentro do valor informado (±10%).
-
-DADOS DO USUÁRIO:
+function buildUserDataBlock(data, rates) {
+  return `DADOS DO USUÁRIO:
+- Origem (partida): ${data.origem}
 - Destinos: ${data.destinos}
 - Data: ${data.data}
 - Viajantes: ${data.viajantes}
@@ -471,24 +463,278 @@ DADOS DO USUÁRIO:
 - Atividades desejadas: ${data.atividades}
 - Estilo da viagem: ${data.estilo}
 - Transporte: ${data.transporte}
-- Orçamento total: ${data.orcamento}
-${budgetNote}
+
+CÂMBIO TURÍSTICO (use EXATAMENTE estes valores para converter moedas estrangeiras em R$; NÃO use câmbio comercial/PTAX):
+- 1 EUR = R$ ${rates.EUR}
+- 1 USD = R$ ${rates.USD}
+- 1 GBP = R$ ${rates.GBP}
+- 1 JPY = R$ ${rates.JPY}  (por iene; ao exibir "¥ 100 = R$ X", multiplique por 100)
+Esses valores já simulam o câmbio real pago pelo turista brasileiro (ex.: Wise, Remessa Online), cerca de 6% acima do comercial.`;
+}
+
+function buildPromptPart1(data, rates, days) {
+  const nDays = days || parseDays(data.data) || 1;
+  const minRestaurantes = Math.max(3, Math.ceil(nDays / 3));
+  return `Gere a PRIMEIRA PARTE do conteúdo HTML de um roteiro de viagem preenchendo o template abaixo. Substitua TODOS os marcadores entre colchetes [...] por conteúdo real, verificável e detalhado. Use informações REAIS (nomes de restaurantes, hotéis, museus, telefones e links que existem de verdade). Adapte a quantidade de dias, cidades e conteúdo conforme os dados do usuário.
+
+${buildUserDataBlock(data, rates)}
+
+ATENÇÃO CRÍTICA — COBERTURA DE TODOS OS DIAS:
+- Esta viagem tem ${nDays} dias. Você DEVE gerar um <div class="day-content" id="day-N"> COMPLETO para CADA um dos ${nDays} dias (day-1, day-2, ..., day-${nDays}).
+- Cada dia precisa de 5-8 atividades PRÓPRIAS com hora, título, descrição, preço e local reais.
+- Crie também os ${nDays} day-pills e day-dots correspondentes no .day-nav e no #dayDots.
+- NÃO use placeholders como "similar ao dia 1", "ver dia anterior" ou "manhã livre". Cada dia deve ter conteúdo único.
+- Se o HTML ficar longo, REDUZA descrições textuais, mas NUNCA omita dias. Prefira descrições curtas (1-2 frases) a pular dias.
+
+SEÇÃO GASTRONOMIA — proporção à duração da viagem:
+- Inclua PELO MENOS ${minRestaurantes} restaurantes diferentes (cada um em um <div class="place-card">), distribuídos entre as cidades visitadas.
+- Para cada cidade, traga uma mistura de perfis (casual, típico local, especial).
+
+SEÇÃO HOSPEDAGENS — proporção à duração da viagem:
+- Inclua pelo menos 1 hotel por cidade visitada.
+- Se a estadia em uma cidade passar de 5 dias, sugira 2 opções para essa cidade (1 recomendação principal + 1 alternativa de outro perfil/preço).
+${passagensInstructionForDays(data)}
+
+ORÇAMENTO:
+- NÃO force preços para bater um orçamento pré-definido — o usuário NÃO informou orçamento.
+- ESTIME o custo real de cada item com base em dados verificáveis do destino. O total será a soma natural dos itens.
+- Use o CÂMBIO TURÍSTICO fornecido acima para converter moedas estrangeiras em R$.
 
 IMPORTANTE:
-- Gere APENAS o código HTML completo, sem explicações antes ou depois.
-- Replique TODAS as seções do template (destinos, orientações, gastronomia, hospedagens, roteiro dia a dia, financeiro, reservas, dicas).
-- Crie um day-content e day-pill/day-dot para CADA dia da viagem.
+- Gere APENAS o HTML (SEM <!DOCTYPE>, <html>, <head>, <style>, <script>). O CSS e JavaScript já serão adicionados automaticamente pelo sistema.
+- Comece direto com <div class="overlay"... e termine com o </div> que fecha a section-card do roteiro (id="roteiro").
+- NÃO gere as seções financeiro, reservas, dicas ou footer — elas serão geradas separadamente.
+- NÃO feche a div.main (ela continua na parte 2).
 - Use dados reais e verificáveis.
 - Adapte o número de cidades no header conforme os destinos informados.
-- O valor de totalDays no JavaScript deve ser o número correto de dias.
 - Use emojis de bandeiras dos países (ex: 🇫🇷 🇮🇹 🇺🇸) nos locais indicados no template.
-- Para TODOS os valores monetários (preços de restaurantes, hotéis, atividades, resumo financeiro, totais diários), exiba SEMPRE no formato: [valor em moeda local] (R$ [valor em reais]). Exemplo: "€ 25,00 (R$ 140,00)" ou "¥ 3.000 (R$ 110,00)". Use a cotação aproximada atual. No resumo financeiro, mantenha o mesmo formato dual em cada finance-value. Se o destino for no Brasil, use apenas R$.
-- NÃO inclua tags <img> no HTML. As imagens serão adicionadas automaticamente pelo sistema.
+- No info-card, use o campo "🛫 Partida" mostrando a origem "${data.origem}" (NÃO exiba "Orçamento" no info-card).
+- Para TODOS os valores monetários, exiba SEMPRE no formato: [valor em moeda local] (R$ [valor em reais]). Exemplo: "€ 25,00 (R$ 155,00)". Se o destino for no Brasil, use apenas R$.
+- NÃO inclua tags <img> no HTML.
 
-TEMPLATE HTML:
+TEMPLATE (gere APENAS este conteúdo preenchido):
 
-${HTML_TEMPLATE}`;
+${BODY_TEMPLATE_PART1}`;
 }
+
+function buildPromptPart2(data, rates) {
+  const passagens = data.passagens;
+  let passagensInstrucao;
+  if (!passagens) {
+    passagensInstrucao = `B) PASSAGENS AÉREAS:
+   - O usuário NÃO selecionou avião como transporte. OMITA a seção "Passagens aéreas" do resumo financeiro.
+   - NÃO inclua linha de voo.`;
+  } else if (passagens.modo === 'manual') {
+    passagensInstrucao = `B) PASSAGENS AÉREAS — VALOR INFORMADO PELO USUÁRIO:
+   - O usuário JÁ SABE o valor total das passagens: ${passagens.valor} (grupo inteiro, ida+volta).
+   - Use EXATAMENTE esse valor na linha "Voo ida+volta: ${data.origem} → [destino principal]". NÃO estime outro valor.
+   - Mantenha a linha destacada separada dos gastos no destino.`;
+  } else {
+    passagensInstrucao = `B) PASSAGENS AÉREAS — ESTIMAR:
+   - Voo ida+volta: ${data.origem} → [destino principal]
+   - Use estimativa realista de passagem econômica para as datas informadas (considere alta/baixa temporada e antecedência).
+   - Valor deve cobrir TODOS os viajantes do grupo. NÃO some automaticamente ao subtotal do destino.`;
+  }
+
+  return `Você está gerando a SEGUNDA PARTE de um roteiro de viagem. A primeira parte (seções 1-8) já foi gerada. Agora gere APENAS as seções finais: resumo financeiro, reservas importantes, dicas extras e footer.
+
+${buildUserDataBlock(data, rates)}
+
+ORÇAMENTO — SEPARAÇÃO OBRIGATÓRIA:
+A seção financeiro DEVE ter DUAS partes claramente separadas:
+
+A) GASTOS NO DESTINO (NÃO inclua passagens aéreas aqui):
+   - Hospedagem (total de todas as noites)
+   - Alimentação
+   - Transporte local
+   - Passeios e atividades
+   - Compras e extras
+   - Subtotal Destino
+
+${passagensInstrucao}
+
+C) TOTAL ESTIMADO DA VIAGEM = Subtotal Destino${passagens ? ' + Passagens Aéreas' : ''}
+
+Siga EXATAMENTE o template HTML abaixo — ele já tem a estrutura correta para a separação.
+
+IMPORTANTE:
+- Gere APENAS o HTML das seções finais (SEM <!DOCTYPE>, <html>, <head>, <style>, <script>).
+- Comece direto com <div class="section-card" id="financeiro"> e termine com o </div> do footer e o </div> que fecha a div.main.
+- ESTIME valores reais; NÃO force um total arbitrário.
+- Para TODOS os valores monetários, exiba no formato: [valor em moeda local] (R$ [valor em reais]). Se o destino for no Brasil, use apenas R$.
+- NÃO inclua tags <img> no HTML.
+
+TEMPLATE (gere APENAS este conteúdo preenchido):
+
+${BODY_TEMPLATE_PART2}`;
+}
+
+function countDayContents(html) {
+  // Aceita class="day-content" ou class="day-content active"
+  return (html.match(/<div\s+class="day-content[^"]*"[^>]*id="day-\d+"/gi) || []).length;
+}
+
+// Extrai o bloco HTML entre a abertura de id="day-N" e o próximo id="day-X" (ou fim do html)
+function sliceDayBlock(html, n) {
+  const openRe = new RegExp(`<div\\s+class="day-content[^"]*"[^>]*id="day-${n}"`, 'i');
+  const m = openRe.exec(html);
+  if (!m) return null;
+  const start = m.index;
+  const after = html.slice(start + m[0].length);
+  const nextRe = /<div\s+class="day-content[^"]*"[^>]*id="day-\d+"/i;
+  const nm = nextRe.exec(after);
+  const end = nm ? start + m[0].length + nm.index : html.length;
+  return { start, end, text: html.slice(start, end) };
+}
+
+// Dia é completo se tem >= MIN_ACTIVITIES activity-cards no seu bloco
+const MIN_ACTIVITIES_PER_DAY = 2;
+
+function findMissingDays(html, expectedDays) {
+  const missing = [];
+  for (let i = 1; i <= expectedDays; i++) {
+    const block = sliceDayBlock(html, i);
+    if (!block) { missing.push(i); continue; }
+    const activities = (block.text.match(/class="activity-card"/gi) || []).length;
+    if (activities < MIN_ACTIVITIES_PER_DAY) missing.push(i);
+  }
+  return missing;
+}
+
+// Remove blocos de dias truncados/incompletos para evitar duplicação no retry
+function stripIncompleteDays(html, missingDays) {
+  let out = html;
+  // Remove dias em ordem descendente pra não invalidar offsets
+  const sorted = [...missingDays].sort((a, b) => b - a);
+  for (const n of sorted) {
+    const block = sliceDayBlock(out, n);
+    if (!block) continue;
+    out = out.slice(0, block.start) + out.slice(block.end);
+  }
+  return out;
+}
+
+function passagensInstructionForDays(data) {
+  const p = data.passagens;
+  if (!p) return '';
+  if (p.modo === 'manual') {
+    return `
+PASSAGENS AÉREAS (INFORMADAS PELO USUÁRIO):
+- Valor total das passagens ida+volta do grupo: ${p.valor} (JÁ informado pelo usuário; este valor será mostrado só no Resumo Financeiro).
+- Nas activity-cards que envolvem VOO (chegada/partida), use EXATAMENTE: <div class="price-tag">Ver Resumo Financeiro</div>. NÃO invente preço, NÃO estime, NÃO coloque valor por pessoa.
+- NÃO inclua o custo das passagens no day-total dos dias de voo.`;
+  }
+  // modo estimar
+  return `
+PASSAGENS AÉREAS:
+- Nas activity-cards que envolvem VOO (chegada/partida), use <div class="price-tag">Ver Resumo Financeiro</div>. O valor detalhado das passagens aparece apenas no Resumo Financeiro.
+- NÃO inclua o custo das passagens no day-total dos dias de voo.`;
+}
+
+function buildMissingDaysPrompt(data, rates, missingDays, totalDays) {
+  const list = missingDays.join(', ');
+  return `Continuação do roteiro: faltam detalhar alguns dias. A viagem tem ${totalDays} dias no total; gere APENAS os day-content dos dias: ${list}.
+
+${buildUserDataBlock(data, rates)}
+${passagensInstructionForDays(data)}
+
+FORMATO OBRIGATÓRIO — para CADA dia solicitado, gere um bloco completo assim:
+
+<div class="day-content" id="day-N">
+  <div class="day-header">
+    <div class="day-number">N</div>
+    <div class="day-title"><h3>[Título do Dia N]</h3><p>[Data] • [Subtítulo]</p></div>
+  </div>
+  <div class="day-highlight">✨ Destaque do dia: [frase resumo]</div>
+  <!-- 5 a 8 activity-card reais, cada uma com time-badge, h4, p, price-tag e action-buttons -->
+  <div class="activity-card">
+    <div class="time-badge">⏰ [HH:MM] – [HH:MM]</div>
+    <h4>[emoji] [Atividade]</h4>
+    <p>[Descrição curta]</p>
+    <div class="price-tag">[moeda local] (R$ [reais])</div>
+    <div class="action-buttons"><a href="#" target="_blank" class="btn-action">📍 Local</a></div>
+  </div>
+  <div class="day-total">💰 Total estimado Dia N: [moeda local] (R$ [reais])</div>
+</div>
+
+REGRAS:
+- Gere APENAS os day-content dos dias ${list}, NADA MAIS (sem wrapper, sem <!DOCTYPE>, sem outras seções).
+- Substitua N pelo número real do dia em cada bloco.
+- Cada dia tem 5-8 atividades ÚNICAS e verificáveis.
+- Use o CÂMBIO TURÍSTICO informado.
+- Se houver múltiplos dias, separe-os apenas por uma linha em branco.`;
+}
+
+function prunePillsForMissingDays(html, expectedDays) {
+  const missing = findMissingDays(html, expectedDays);
+  if (!missing.length) return html;
+  let out = html;
+  for (const n of missing) {
+    // Remove o day-pill e day-dot que chamam showDay(n)
+    out = out.replace(new RegExp(`<button class="day-pill[^"]*"[^>]*onclick="showDay\\(${n}\\)"[^>]*>[^<]*<\\/button>`, 'gi'), '');
+    out = out.replace(new RegExp(`<span class="day-dot[^"]*"[^>]*onclick="showDay\\(${n}\\)"[^>]*><\\/span>`, 'gi'), '');
+  }
+  process.stderr.write(`[prunePills] removidos pills/dots dos dias sem conteúdo: ${missing.join(',')}\n`);
+  return out;
+}
+
+async function ensureAllDays(htmlPart1, expectedDays, data, rates) {
+  const MAX_LOOPS = 4;
+  const BATCH_SIZE = 5;
+  let html = htmlPart1;
+  const log = (msg) => process.stderr.write(`[ensureAllDays] ${msg}\n`);
+
+  log(`start: expectedDays=${expectedDays}, initial day-contents=${countDayContents(html)}`);
+
+  for (let loop = 1; loop <= MAX_LOOPS; loop++) {
+    const missing = findMissingDays(html, expectedDays);
+    if (!missing.length) {
+      if (loop > 1) log(`completo após ${loop - 1} retries`);
+      return html;
+    }
+    const batch = missing.slice(0, BATCH_SIZE);
+    log(`loop ${loop}: faltam ${missing.length} (${missing.join(',')}); pedindo lote: ${batch.join(',')}`);
+    // Remover blocos truncados desses dias antes do retry (evita duplicação)
+    const beforeStrip = html.length;
+    html = stripIncompleteDays(html, batch);
+    if (html.length !== beforeStrip) log(`loop ${loop}: removido ${beforeStrip - html.length} chars de blocos incompletos`);
+
+    try {
+      const retryRes = await deepseek.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: buildMissingDaysPrompt(data, rates, batch, expectedDays) }],
+        max_tokens: 8192,
+        temperature: 0.7,
+      });
+      const extra = stripFences(retryRes.choices[0].message.content);
+      const extraCount = (extra.match(/<div\s+class="day-content[^"]*"[^>]*id="day-\d+"/gi) || []).length;
+      log(`loop ${loop}: resposta com ${extra.length} chars, ${extraCount} day-content gerados`);
+
+      const lastCloseIdx = html.lastIndexOf('</div>');
+      html = lastCloseIdx === -1
+        ? html + '\n' + extra
+        : html.slice(0, lastCloseIdx) + '\n' + extra + '\n' + html.slice(lastCloseIdx);
+    } catch (err) {
+      log(`loop ${loop} ERRO: ${err.message || err}`);
+      break;
+    }
+  }
+
+  const stillMissing = findMissingDays(html, expectedDays);
+  if (stillMissing.length) {
+    log(`WARN: ${stillMissing.length} dias ainda ausentes após ${MAX_LOOPS} tentativas: ${stillMissing.join(',')}`);
+  }
+  return html;
+}
+
+function stripFences(text) {
+  let html = text.trim();
+  if (html.startsWith('```html')) html = html.slice(7);
+  else if (html.startsWith('```')) html = html.slice(3);
+  if (html.endsWith('```')) html = html.slice(0, -3);
+  return html.trim();
+}
+
 
 // Extrair HTML limpo da resposta do Gemini e injetar correções
 function extractHTML(text) {
@@ -638,22 +884,54 @@ ${urls}</urlset>`;
 
 app.post('/api/gerar-roteiro', async (req, res) => {
   try {
-    const { destinos, data, viajantes, objetivo, atividades, estilo, transporte, orcamento } = req.body;
+    const { origem, destinos, data, viajantes, objetivo, atividades, estilo, transporte } = req.body;
 
-    if (!destinos || !data || !viajantes || !orcamento) {
+    if (!origem || !destinos || !data || !viajantes) {
       return res.status(400).json({ success: false, error: 'Preencha todos os campos obrigatórios.' });
     }
 
-    const budgetWarning = checkBudget(req.body);
-    const prompt = buildPrompt(req.body, budgetWarning);
+    const days = parseDays(data) || 1;
+    const rates = await getTouristRates();
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
+    // --- Chamadas em PARALELO ---
+    const promptPart1 = buildPromptPart1(req.body, rates, days);
+    const promptPart2 = buildPromptPart2(req.body, rates);
 
-    const rawHTML = response.text;
-    const html = extractHTML(rawHTML);
+    const [response1, response2] = await Promise.all([
+      deepseek.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: promptPart1 }],
+        max_tokens: 8192,
+        temperature: 0.7,
+      }),
+      deepseek.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: promptPart2 }],
+        max_tokens: 4096,
+        temperature: 0.7,
+      }),
+    ]);
+
+    const rawPart1 = stripFences(response1.choices[0].message.content);
+    const rawPart2 = stripFences(response2.choices[0].message.content);
+
+    // Validar cobertura de dias e complementar se faltar
+    let safePart1 = await ensureAllDays(rawPart1, days, req.body, rates);
+    safePart1 = prunePillsForMissingDays(safePart1, days);
+
+    // Combinar e limpar
+    const bodyContent = extractHTML(safePart1 + '\n' + rawPart2);
+
+    // Extrair título do header gerado pela AI
+    const titleMatch = bodyContent.match(/<h1[^>]*>(.+?)<\/h1>/);
+    const titleText = titleMatch
+      ? titleMatch[1].replace(/<[^>]+>/g, '').trim()
+      : `Roteiro ${destinos}`;
+
+    // Montar HTML completo: HEAD estático + body da AI + scripts estáticos
+    const head = HTML_HEAD.replace('%%TITLE%%', `${titleText} | RoteiroPro`);
+    const scripts = HTML_SCRIPTS.replace('%%TOTAL_DAYS%%', String(days || 1));
+    const html = head + bodyContent + scripts;
 
     const id = crypto.randomUUID().split('-')[0];
     const filePath = path.join(ROTEIROS_DIR, `${id}.html`);

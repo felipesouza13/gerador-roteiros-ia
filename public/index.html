@@ -67,6 +67,12 @@
     <div class="card">
       <form id="roteiro-form">
 
+        <!-- Origem -->
+        <div class="form-group">
+          <label for="origem">✈️ De onde voce vai partir?</label>
+          <input type="text" id="origem" placeholder="Ex: Sao Paulo, SP" required>
+        </div>
+
         <!-- Destinos -->
         <div class="form-group">
           <label>📍 Para onde voce quer ir?</label>
@@ -207,24 +213,26 @@
             <label class="check-card"><input type="checkbox" name="transporte" value="Carro alugado"><span class="check-label">🚗 Carro alugado</span></label>
             <label class="check-card"><input type="checkbox" name="transporte" value="Navio/Cruzeiro"><span class="check-label">🚢 Navio</span></label>
             <label class="check-card"><input type="checkbox" name="transporte" value="A pe/Bicicleta"><span class="check-label">🚲 A pe/Bike</span></label>
+            <label class="check-card"><input type="checkbox" name="transporte" value="Transporte por aplicativo (Uber/Bolt/Lyft)"><span class="check-label">📱 App (Uber/Bolt/Lyft)</span></label>
           </div>
         </div>
 
-        <!-- Orcamento -->
-        <div class="form-group">
-          <label for="orcamento">💰 Orcamento total</label>
-          <div class="budget-slider-row">
-            <input type="range" id="budgetSlider" min="1000" max="100000" step="500" value="15000" class="budget-slider">
-            <div class="budget-slider-labels">
-              <span>R$ 1.000</span>
-              <span>R$ 100.000</span>
-            </div>
+        <!-- Passagens aereas (condicional: aparece quando Aviao marcado) -->
+        <div class="form-group" id="passagensGroup" style="display:none">
+          <label>✈️ Passagens aereas (total da viagem)</label>
+          <div class="date-mode-toggle">
+            <button type="button" class="mode-btn active" id="modePassagensEstimar" onclick="setPassagensMode('estimar')">IA estima pra mim</button>
+            <button type="button" class="mode-btn" id="modePassagensManual" onclick="setPassagensMode('manual')">Ja sei o valor</button>
           </div>
-          <div class="input-money">
-            <span class="money-prefix">R$</span>
-            <input type="text" id="orcamento" placeholder="15.000,00" required>
+          <div id="passagensManualRow" style="display:none;margin-top:10px">
+            <input type="text" id="passagensValor" placeholder="Ex: 8.500,00" inputmode="numeric">
+            <p style="font-size:.8rem;color:#666;margin-top:6px">Valor total das passagens para todos os viajantes (ida+volta).</p>
           </div>
         </div>
+
+        <p class="budget-note" style="margin:8px 2px 20px;font-size:.85rem;color:#666;line-height:1.5">
+          💡 A IA vai estimar o orcamento real da viagem com base nos seus dados, separando <strong>gastos no destino</strong> das <strong>passagens aereas</strong>.
+        </p>
 
         <button type="submit" class="btn-submit">
           <span class="btn-text">Gerar Meu Roteiro</span>

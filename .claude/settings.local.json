@@ -13,7 +13,15 @@
       "Bash(grep -n \"app\\\\\\\\.get\\\\|app\\\\\\\\.post\\\\|routes\\\\|sitemap\\\\|robots\" \"D:\\\\Coding\\\\gerador-roteiros-ia\\\\server.js\")",
       "Bash(grep -h '<title>' D:/Coding/gerador-roteiros-ia/roteiros/*.html)",
       "Bash(scp:*)",
-      "Bash(git -C \"D:\\\\Coding\\\\gerador-roteiros-ia\" status --short)"
+      "Bash(git -C \"D:\\\\Coding\\\\gerador-roteiros-ia\" status --short)",
+      "Bash(rsync *)",
+      "Bash(npm install *)",
+      "Bash(awk '{print $NF}')",
+      "Bash(taskkill //F //PID 29608)",
+      "Bash(node --check server.js)",
+      "Bash(npm start *)",
+      "Bash(curl -s http://localhost:5780/)",
+      "Bash(awk -v 'day=id=\"day-__TRACKED_VAR__\"' ' *)"
     ]
   },
   "enabledPlugins": {

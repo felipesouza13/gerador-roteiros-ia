@@ -260,63 +260,37 @@ parseEmojis();
 
 
 // ============================================
-// MASCARA DE MOEDA R$ + SLIDER
+// PASSAGENS AEREAS (aparece se Aviao marcado)
 // ============================================
-const orcamentoInput = document.getElementById('orcamento');
-const budgetSlider = document.getElementById('budgetSlider');
-let syncingFromSlider = false;
-let syncingFromInput = false;
+let passagensMode = 'estimar';
+const passagensGroup = document.getElementById('passagensGroup');
+const passagensManualRow = document.getElementById('passagensManualRow');
+const passagensValor = document.getElementById('passagensValor');
 
-function formatCurrency(cents) {
-  return (cents / 100).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+function setPassagensMode(mode) {
+  passagensMode = mode;
+  document.getElementById('modePassagensEstimar').classList.toggle('active', mode === 'estimar');
+  document.getElementById('modePassagensManual').classList.toggle('active', mode === 'manual');
+  passagensManualRow.style.display = mode === 'manual' ? 'block' : 'none';
 }
+window.setPassagensMode = setPassagensMode;
 
-function parseCurrencyToCents(str) {
-  const clean = str.replace(/\D/g, '');
-  return clean ? parseInt(clean, 10) : 0;
+function updatePassagensVisibility() {
+  const aviaoMarcado = !!document.querySelector('input[name="transporte"][value="Aviao"]:checked');
+  passagensGroup.style.display = aviaoMarcado ? 'block' : 'none';
 }
-
-function updateSliderFill() {
-  const min = parseInt(budgetSlider.min);
-  const max = parseInt(budgetSlider.max);
-  const val = parseInt(budgetSlider.value);
-  const pct = ((val - min) / (max - min)) * 100;
-  budgetSlider.style.setProperty('--fill', pct + '%');
-}
-
-// Slider -> Input
-budgetSlider.addEventListener('input', () => {
-  syncingFromSlider = true;
-  const val = parseInt(budgetSlider.value);
-  orcamentoInput.value = formatCurrency(val * 100);
-  updateSliderFill();
-  syncingFromSlider = false;
+document.querySelectorAll('input[name="transporte"]').forEach(cb => {
+  cb.addEventListener('change', updatePassagensVisibility);
 });
+updatePassagensVisibility();
 
-// Input -> Slider (mascara + sync)
-orcamentoInput.addEventListener('input', () => {
-  let value = orcamentoInput.value.replace(/\D/g, '');
-  if (!value) { orcamentoInput.value = ''; return; }
-
-  let num = parseInt(value, 10);
-  orcamentoInput.value = formatCurrency(num);
-
-  // Sync slider
-  if (!syncingFromSlider) {
-    const reais = num / 100;
-    const clamped = Math.min(Math.max(reais, parseInt(budgetSlider.min)), parseInt(budgetSlider.max));
-    budgetSlider.value = clamped;
-    updateSliderFill();
-  }
+// Mascara de moeda para o input de passagens
+passagensValor.addEventListener('input', () => {
+  const digits = passagensValor.value.replace(/\D/g, '');
+  if (!digits) { passagensValor.value = ''; return; }
+  const cents = parseInt(digits, 10);
+  passagensValor.value = (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 });
-
-// Init slider position and fill
-budgetSlider.value = 15000;
-orcamentoInput.value = formatCurrency(15000 * 100);
-updateSliderFill();
 
 
 // ============================================
@@ -552,7 +526,19 @@ document.getElementById('roteiro-form').addEventListener('submit', async (e) => 
   const atividades = getCheckedValues('atividades');
   const transporte = getCheckedValues('transporte');
 
+  // Passagens (so considera se Aviao esta marcado)
+  const aviaoMarcado = transporte.split(',').map(s => s.trim()).includes('Aviao');
+  let passagens = null;
+  if (aviaoMarcado) {
+    if (passagensMode === 'manual' && passagensValor.value.trim()) {
+      passagens = { modo: 'manual', valor: 'R$ ' + passagensValor.value.trim() };
+    } else {
+      passagens = { modo: 'estimar' };
+    }
+  }
+
   const formData = {
+    origem: document.getElementById('origem').value,
     destinos,
     data,
     viajantes: document.getElementById('viajantes').value,
@@ -560,7 +546,7 @@ document.getElementById('roteiro-form').addEventListener('submit', async (e) => 
     atividades,
     estilo: document.getElementById('estilo').value,
     transporte,
-    orcamento: 'R$ ' + orcamentoInput.value,
+    passagens,
   };
 
   try {
