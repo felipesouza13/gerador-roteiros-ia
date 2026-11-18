@@ -1,3 +1,6 @@
 node_modules/
 roteiros/
 .env
+
+# Clone de repositório de terceiros (não versionar aqui)
+awesome-claude-skills/
